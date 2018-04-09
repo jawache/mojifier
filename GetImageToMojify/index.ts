@@ -32,35 +32,43 @@ function getMediaFromTweet(context, tweet): string | null {
 */
 function selectMediaFromTweet(context, tweetId) {
   return new Promise((resolve, reject) => {
-    CLIENT.get("statuses/show/" + tweetId, (err, res) => {
-      if (err) reject(err);
+    CLIENT.get(
+      "statuses/show/" + tweetId,
+      { tweet_mode: "extended" },
+      (err, res) => {
+        if (err) reject(err);
 
-      // Are we replying to a tweet?
-      let origTweetId = res.in_reply_to_status_id_str;
+        // Are we replying to a tweet?
+        let origTweetId = res.in_reply_to_status_id_str;
 
-      if (origTweetId === null) {
-        context.log(`Returning media from this tweet ${tweetId}`);
-        // No we are not a reply so return any media from this tweet if there is any
-        try {
-          let mediaUrl = getMediaFromTweet(context, res);
-          resolve(mediaUrl);
-        } catch (err) {
-          reject(err);
-        }
-      } else {
-        // Yes we are so get the original tweet.
-        context.log(`Return original tweet ${origTweetId}`);
-        CLIENT.get("statuses/show/" + origTweetId, (err, origRes) => {
-          if (err) reject(err);
+        if (origTweetId === null) {
+          context.log(`Returning media from this tweet ${tweetId}`);
+          // No we are not a reply so return any media from this tweet if there is any
           try {
-            let mediaUrl = getMediaFromTweet(context, origRes);
+            let mediaUrl = getMediaFromTweet(context, res);
             resolve(mediaUrl);
           } catch (err) {
             reject(err);
           }
-        });
+        } else {
+          // Yes we are so get the original tweet.
+          context.log(`Return original tweet ${origTweetId}`);
+          CLIENT.get(
+            "statuses/show/" + origTweetId,
+            { tweet_mode: "extended" },
+            (err, origRes) => {
+              if (err) reject(err);
+              try {
+                let mediaUrl = getMediaFromTweet(context, origRes);
+                resolve(mediaUrl);
+              } catch (err) {
+                reject(err);
+              }
+            }
+          );
+        }
       }
-    });
+    );
   });
 }
 
