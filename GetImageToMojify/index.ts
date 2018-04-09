@@ -1,10 +1,26 @@
 import * as Twitter from "twitter";
+import * as util from "util";
 
 process.on("unhandledRejection", (reason, p) => {
   console.log("Unhandled Rejection at: Promise", p, "reason:", reason);
 });
 
 let CLIENT = null;
+
+function getTweet(tweetId): Promise<any> {
+  return new Promise((resolve, reject) => {
+    CLIENT.get(
+      `statuses/show/${tweetId}`,
+      {
+        tweet_mode: "extended"
+      },
+      (err, res) => {
+        if (err) reject(err);
+        resolve(res);
+      }
+    );
+  });
+}
 
 /*
     If the tweet has some media returns the first image, else returns null
@@ -30,46 +46,25 @@ function getMediaFromTweet(context, tweet): string | null {
     - If the user replied to a tweet with an image then it will mojify that image.
     - if the user tweeted and image and tagged it at the same time it will mojify that image.
 */
-function selectMediaFromTweet(context, tweetId) {
-  return new Promise((resolve, reject) => {
-    CLIENT.get(
-      "statuses/show/" + tweetId,
-      { tweet_mode: "extended" },
-      (err, res) => {
-        if (err) reject(err);
+async function selectMediaFromTweet(context, tweetId) {
+  // Get information about the original tweet
+  let res = await getTweet(tweetId);
 
-        // Are we replying to a tweet?
-        let origTweetId = res.in_reply_to_status_id_str;
+  // Are we replying to a tweet?
+  let origTweetId = res.in_reply_to_status_id_str;
 
-        if (origTweetId === null) {
-          context.log(`Returning media from this tweet ${tweetId}`);
-          // No we are not a reply so return any media from this tweet if there is any
-          try {
-            let mediaUrl = getMediaFromTweet(context, res);
-            resolve(mediaUrl);
-          } catch (err) {
-            reject(err);
-          }
-        } else {
-          // Yes we are so get the original tweet.
-          context.log(`Return original tweet ${origTweetId}`);
-          CLIENT.get(
-            "statuses/show/" + origTweetId,
-            { tweet_mode: "extended" },
-            (err, origRes) => {
-              if (err) reject(err);
-              try {
-                let mediaUrl = getMediaFromTweet(context, origRes);
-                resolve(mediaUrl);
-              } catch (err) {
-                reject(err);
-              }
-            }
-          );
-        }
-      }
-    );
-  });
+  if (origTweetId === null) {
+    context.log(`Returning media from this tweet ${tweetId}`);
+    // No we are not a reply so return any media from this tweet if there is any
+    let mediaUrl = getMediaFromTweet(context, res);
+    return { mediaUrl, tweetId };
+  } else {
+    // Yes we are so get the original tweet.
+    context.log(`Return original tweet ${origTweetId}`);
+    let origRes = await getTweet(origTweetId);
+    let mediaUrl = getMediaFromTweet(context, origRes);
+    return { mediaUrl, tweetId: origTweetId };
+  }
 }
 
 export async function index(context, req) {
@@ -93,10 +88,13 @@ export async function index(context, req) {
   }
 
   try {
-    let mediaUrl = await selectMediaFromTweet(context, req.query.id);
+    let { mediaUrl, tweetId } = await selectMediaFromTweet(
+      context,
+      req.query.id
+    );
     if (mediaUrl) {
       context.log.verbose(`Found media in tweet ${mediaUrl}`);
-      context.done(null, { body: mediaUrl });
+      context.done(null, { body: { mediaUrl, tweetId } });
     } else {
       const message = "No media was found for this tweet";
       context.log.warn(message);
