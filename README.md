@@ -48,7 +48,7 @@ Then ensure you have the [Azure Functions CLI](https://docs.microsoft.com/en-us/
 
 This will start the function app running on localhost, you can now make HTTP requests against the endpoints.
 
-## Releasing
+## Releasing
 
 You can host your own version of this code by:
 
