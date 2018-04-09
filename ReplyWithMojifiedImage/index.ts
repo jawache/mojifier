@@ -11,36 +11,34 @@ process.on("unhandledRejection", (reason, p) => {
   console.log("Unhandled Rejection at: Promise", p, "reason:", reason);
 });
 
-function createMojifiedImage(context, imageUrl, faces) {
-  return new Promise((resolve, reject) => {
-    // read the image which is provided through link in url query
-    Jimp.read(imageUrl).then(sourceImage => {
-      for (let face of faces) {
-        let mojiIcon = face.mojiIcon;
-        let faceHeight = face.faceRectangle.height;
-        let faceWidth = face.faceRectangle.width;
-        let faceTop = face.faceRectangle.top;
-        let faceLeft = face.faceRectangle.left;
+async function createMojifiedImage(context, imageUrl, faces) {
+  // read the image which is provided through link in url query
+  let sourceImage = await Jimp.read(imageUrl);
+  let compositeImage = sourceImage;
+  for (let face of faces) {
+    let mojiIcon = face.mojiIcon;
+    let faceHeight = face.faceRectangle.height;
+    let faceWidth = face.faceRectangle.width;
+    let faceTop = face.faceRectangle.top;
+    let faceLeft = face.faceRectangle.left;
 
-        // Load the emoji from disk
-        let mojiPath = path.resolve(__dirname, "./emojis/" + mojiIcon + ".png");
-        Jimp.read(mojiPath).then(emojiImage => {
-          emojiImage.resize(faceWidth, faceHeight); // resize the emoji to fit the face
-          sourceImage
-            .composite(emojiImage, faceLeft, faceTop) // compose the emoji on the image
-            .getBuffer(Jimp.MIME_JPEG, (error, buffer) => {
-              // get a buffer of the composed image
-              if (error) {
-                let message =
-                  "There was an error adding the emoji to the image";
-                context.log.error(error);
-                reject(message);
-              } else {
-                // put the image into the context body
-                resolve(buffer);
-              }
-            });
-        });
+    // Load the emoji from disk
+    let mojiPath = path.resolve(__dirname, "./emojis/" + mojiIcon + ".png");
+    let emojiImage = await Jimp.read(mojiPath);
+    emojiImage.resize(faceWidth, faceHeight); // resize the emoji to fit the face
+    compositeImage = compositeImage.composite(emojiImage, faceLeft, faceTop); // compose the emoji on the image
+  }
+
+  return new Promise((resolve, reject) => {
+    compositeImage.getBuffer(Jimp.MIME_JPEG, (error, buffer) => {
+      // get a buffer of the composed image
+      if (error) {
+        let message = "There was an error adding the emoji to the image";
+        context.log.error(error);
+        reject(message);
+      } else {
+        // put the image into the context body
+        resolve(buffer);
       }
     });
   });
@@ -70,7 +68,7 @@ function calculateHappiness(resp) {
   
     imageUrl is the mojified image URL
   */
-function postReply(context, imageBuffer, username, tweetId) {
+function postReply(context, imageBuffer, username, mentions, tweetId) {
   return new Promise((resolve, reject) => {
     context.log.verbose(`${tweetId}: Uploading image to twitter`);
     CLIENT.post(
@@ -83,16 +81,19 @@ function postReply(context, imageBuffer, username, tweetId) {
         context.log.verbose(
           `${tweetId}: Post image to twitter as reply ${media.media_id_string}`
         );
+
+        const mention = mentions.map(x => `@${x}`).join(" ");
+
         CLIENT.post(
           "statuses/update",
           {
             in_reply_to_status_id: tweetId,
             media_ids: media.media_id_string,
-            status: `Mojified by @${username}
-  
-  🛠️ built by @jawache
-  ❤️ using @azure
-  🤔 here's how https://aka.ms/mojifier`
+            status: `Hey ${mention} this image was mojified by @${username} 
+
+🛠️ built by @jawache
+❤️ using @azure
+🤔 here's how https://aka.ms/mojifier`
           },
           (err, tweet, response) => {
             if (err) reject(err);
@@ -120,14 +121,15 @@ export async function index(context, req) {
   });
 
   const { imageUrl, username, tweetId } = req.query;
-  const faceApiResponse = req.body;
+  const faceApiResponse = req.body.faces;
+  const mentions = req.body.users.map(u => u.UserName);
 
   context.log(
     `Called with imageUrl: "${imageUrl}" tweetId: "${tweetId}" username: "${username}"`
   );
 
-  if (!imageUrl || !tweetId || !username || !faceApiResponse) {
-    let message = `All 4 params must be not-null imageUrl && tweetId && username && faceApiResponse`;
+  if (!imageUrl || !tweetId || !username || !faceApiResponse || !mentions) {
+    let message = `All 4 params must be not-null imageUrl && tweetId && username && faceApiResponse && mentions`;
     context.log.error(message);
     context.done(message, { status: 400, body: message });
   }
@@ -135,7 +137,13 @@ export async function index(context, req) {
   try {
     let faces = calculateHappiness(faceApiResponse);
     let buffer = await createMojifiedImage(context, imageUrl, faces);
-    let mojifiedTweetUrl = await postReply(context, buffer, username, tweetId);
+    let mojifiedTweetUrl = await postReply(
+      context,
+      buffer,
+      username,
+      mentions,
+      tweetId
+    );
     context.log(`Posted reply with mojified image ${mojifiedTweetUrl}`);
     context.done(null, {
       body: mojifiedTweetUrl,
