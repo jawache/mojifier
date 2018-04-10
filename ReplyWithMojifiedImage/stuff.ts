@@ -93,13 +93,10 @@ function postReply(context, imageBuffer, author, username, mentions, tweetId) {
         CLIENT.post(
           "statuses/update",
           {
-            in_reply_to_status_id: tweetId,
+            in_reply_to_status_id_str: tweetId,
+            // auto_populate_reply_metadata: true,
             media_ids: media.media_id_string,
-            status: `Hey @${author} this image was mojified by @${username} cc/ ${mention}
-
-🛠️ built by @jawache
-❤️ using @azure
-🤔 here's how https://aka.ms/mojifier`
+            status: `Hey @${author} this image was mojified by @${username} using https://aka.ms/mojifier`
           },
           (err, tweet, response) => {
             if (err) reject(err);

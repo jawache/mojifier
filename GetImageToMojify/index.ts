@@ -53,18 +53,39 @@ async function selectMediaFromTweet(context, tweetId) {
   // Are we replying to a tweet?
   let origTweetId = res.in_reply_to_status_id_str;
 
-  if (origTweetId === null) {
-    context.log(`Returning media from this tweet ${tweetId}`);
-    // No we are not a reply so return any media from this tweet if there is any
+  // If there is media in this tweet then use it
+  try {
     let mediaUrl = getMediaFromTweet(context, res);
-    return { mediaUrl, tweetId };
-  } else {
-    // Yes we are so get the original tweet.
-    context.log(`Return original tweet ${origTweetId}`);
-    let origRes = await getTweet(origTweetId);
-    let mediaUrl = getMediaFromTweet(context, origRes);
-    return { mediaUrl, tweetId: origTweetId };
+    return { mediaUrl, tweetId, author: res.user.screen_name };
+  } catch (err) {
+    // If we are in response to another tweet then use that
+    if (origTweetId) {
+      // Yes we are so get the original tweet.
+      context.log(`Return original tweet ${origTweetId}`);
+      let origRes = await getTweet(origTweetId);
+      let mediaUrl = getMediaFromTweet(context, origRes);
+      return {
+        mediaUrl,
+        tweetId: origTweetId,
+        author: origRes.user.screen_name
+      };
+    }
+    // Or rethrow the error
+    throw err;
   }
+
+  // if (origTweetId === null) {
+  //   context.log(`Returning media from this tweet ${tweetId}`);
+  //   // No we are not a reply so return any media from this tweet if there is any
+  //   let mediaUrl = getMediaFromTweet(context, res);
+  //   return { mediaUrl, tweetId };
+  // } else {
+  //   // Yes we are so get the original tweet.
+  //   context.log(`Return original tweet ${origTweetId}`);
+  //   let origRes = await getTweet(origTweetId);
+  //   let mediaUrl = getMediaFromTweet(context, origRes);
+  //   return { mediaUrl, tweetId: origTweetId };
+  // }
 }
 
 export async function index(context, req) {
@@ -74,8 +95,7 @@ export async function index(context, req) {
   CLIENT = new Twitter({
     consumer_key: process.env["TWITTER_CONSUMER_KEY"],
     consumer_secret: process.env["TWITTER_CONSUMER_SECRET"],
-    access_token_key: process.env["TWITTER_ACCESS_TOKEN_KEY"],
-    access_token_secret: process.env["TWITTER_ACCESS_TOKEN_SECRET"]
+    bearer_token: process.env["TWITTER_BEARER_TOKEN"]
   });
 
   if (!req.query.id) {
@@ -88,13 +108,13 @@ export async function index(context, req) {
   }
 
   try {
-    let { mediaUrl, tweetId } = await selectMediaFromTweet(
+    let { mediaUrl, tweetId, author } = await selectMediaFromTweet(
       context,
       req.query.id
     );
     if (mediaUrl) {
       context.log.verbose(`Found media in tweet ${mediaUrl}`);
-      context.done(null, { body: { mediaUrl, tweetId } });
+      context.done(null, { body: { mediaUrl, tweetId, author } });
     } else {
       const message = "No media was found for this tweet";
       context.log.warn(message);
