@@ -94,12 +94,9 @@ function postReply(context, imageBuffer, author, username, mentions, tweetId) {
           "statuses/update",
           {
             in_reply_to_status_id: tweetId,
+            auto_populate_reply_metadata: true,
             media_ids: media.media_id_string,
-            status: `Hey @${author} this image was mojified by @${username} cc/ ${mention}
-
-🛠️ built by @jawache
-❤️ using @azure
-🤔 here's how https://aka.ms/mojifier`
+            status: `@${username} mojified this image by @${author} - https://aka.ms/mojifier`
           },
           (err, tweet, response) => {
             if (err) reject(err);
@@ -120,6 +117,10 @@ export async function index(context, req) {
 
   // Environment variables from local.settings.json are not copied over to process.env until the function is actually run
   CLIENT = new Twitter({
+    // consumer_key: process.env["ALT_TWITTER_CONSUMER_KEY"],
+    // consumer_secret: process.env["ALT_TWITTER_CONSUMER_SECRET"],
+    // access_token_key: process.env["ALT_TWITTER_ACCESS_TOKEN_KEY"],
+    // access_token_secret: process.env["ALT_TWITTER_ACCESS_TOKEN_SECRET"]
     consumer_key: process.env["TWITTER_CONSUMER_KEY"],
     consumer_secret: process.env["TWITTER_CONSUMER_SECRET"],
     access_token_key: process.env["TWITTER_ACCESS_TOKEN_KEY"],
