@@ -4,7 +4,7 @@ The Mojifier is a Twitter bot which replaces peoples faces in images with emojis
 
 It's built on top of [Azure](https://azure.microsoft.com/free/?WT.mc_id=mojifier-github-ashussai) using various Services like [Logic Apps](https://azure.microsoft.com/services/logic-apps/?WT.mc_id=mojifier-sandbox-ashussai), [Functions](https://azure.microsoft.com/services/functions/?WT.mc_id=mojifier-github-ashussai), [Cognitive Services](https://azure.microsoft.com/services/cognitive-services/?WT.mc_id=mojifier-github-ashussai) and [Redis](https://azure.microsoft.com/services/cache/?WT.mc_id=mojifier-github-ashussai).
 
-You can find out more information about TheMojifier and how it was built [here](https://docs.microsoft.com/en-us/sandbox/demos/mojifier)
+You can find out more information about TheMojifier and how it was built [here](https://codecraft.tv/blog/2018/04/09/mojifier/)
 
 ## Requirements
 
