@@ -2,7 +2,7 @@
 
 The Mojifier is a Twitter bot which replaces peoples faces in images with emojis matching their emotion.
 
-It's built on top of [Azure](https://azure.microsoft.com/free/?WT.mc_id=mojifier-github-ashussai) using various Services like [Logic Apps](https://azure.microsoft.com/services/logic-apps/?WT.mc_id=mojifier-sandbox-ashussai), [Functions](https://azure.microsoft.com/services/functions/?WT.mc_id=mojifier-github-ashussai), [Cognitive Services](https://azure.microsoft.com/services/cognitive-services/?WT.mc_id=mojifier-github-ashussai) and [Redis](https://azure.microsoft.com/services/cache/?WT.mc_id=mojifier-github-ashussai).
+It's built on top of [Azure](https://azure.microsoft.com/free/?WT.mc_id=green-0000-ashussai) using various Services like [Logic Apps](https://azure.microsoft.com/services/logic-apps/?WT.mc_id=green-0000-ashussai), [Functions](https://azure.microsoft.com/services/functions/?WT.mc_id=green-0000-ashussai), [Cognitive Services](https://azure.microsoft.com/services/cognitive-services/?WT.mc_id=green-0000-ashussai) and [Redis](https://azure.microsoft.com/services/cache/?WT.mc_id=green-0000-ashussai).
 
 You can find out more information about TheMojifier and how it was built [here](https://codecraft.tv/blog/2018/04/09/mojifier/)
 
@@ -42,7 +42,7 @@ To run locally simply run
 
 `npm install`
 
-Then ensure you have the [Azure Functions CLI](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local) installed and run
+Then ensure you have the [Azure Functions CLI](https://docs.microsoft.com/azure/azure-functions/functions-run-local?WT.mc_id=green-0000-ashussai) installed and run
 
 `func host start`
 
